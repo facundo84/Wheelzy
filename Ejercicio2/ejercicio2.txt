@@ -1,0 +1,32 @@
+2)
+
+Para este caso la mejor estrategia, para los datos que no cambian con frecuencia y se usan constantement, es el almacenamiento en memoria cache.
+¿Qué ejemplos existen?
+ 
+* Datos de sesion de usuario:
+	- Preferencias de idioma, 
+	- Tema seleccionado, 
+	- Notificaciones, 
+	- Informacion de basica del perfil de usuario
+	
+datos de configuracion de la aplicación:
+	- Intentos de inicio de sesion, 
+	- Ajustes de fecha hora, 
+	- Formato de fecha predeterminado
+
+Lo que hace este almacenamiento es guardar copias de los datos a los que se acceden con frecuencia, de forma temporal.
+Esto permite un acceso más rápido, en lugar de consultar a la base de datos, se obltienen los datos de la caché
+
+¿Importa si tienes más de una instancia de la aplicación?
+Si se tiene mas de una instancia de la aplicacion, el almacenamiento en cache es aún más critico, y también más complejo.
+
+Cache en memoria local:
+	Si cada instancia tiene su propia caché en memoria, el problema es que los datos pueden estar 
+		desactualizados si una instancia actualiza la base de datos y las demás no lo saben. Esto se llama un problema de coherencia de caché.
+
+Cache distribuida:
+Es la solución ideal para múltiples instancias. Todas las instancias de la aplicación comparten la misma caché.
+Existen servicios como Redis, o Memcached que son adecuados para estos casos.
+Cuando una instancia actualiza un dato, este cambio se refleja de inmediato para todas las demas instancias, resolviendo el problema de 
+coherencia que si se tiene utilizando cache en memoria local.
+
