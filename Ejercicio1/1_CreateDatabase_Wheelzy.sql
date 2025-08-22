@@ -1,0 +1,127 @@
+--CREO LA BASE DE DATOS SINO EXISTE
+IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = 'Wheelzy')
+BEGIN
+    CREATE DATABASE Wheelzy;
+END
+GO
+--SETEO LA BASE DE DATOS PARA PODER EJECUTAR LAS QUERIES
+
+IF EXISTS (SELECT name FROM sys.databases WHERE name = 'Wheelzy')
+BEGIN
+    USE Wheelzy;
+END
+GO
+
+-- SINO EXISTE LA TABLA, SE CREA. ALMACENA LAS MARCAS DE LOS AUTOS
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'dbo' AND TABLE_NAME = 'brands')
+BEGIN
+    CREATE TABLE brands(
+        brandId INT PRIMARY KEY IDENTITY(1,1),
+        name VARCHAR(50) NOT NULL UNIQUE
+    );
+END
+
+-- SINO EXISTE LA TABLA, SE CREA. ALMACENA LOS MODELOS DE LOS AUTOS ASOCIADOS A UNA MARCA
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'dbo' AND TABLE_NAME = 'models')
+BEGIN
+	CREATE TABLE models (
+		modelId INT PRIMARY KEY IDENTITY(1,1),
+		name VARCHAR(50) NOT NULL,
+		brandId INT NOT NULL,
+		CONSTRAINT fk_models_brandId FOREIGN KEY (brandId) REFERENCES brands(brandId)
+	);
+END
+
+-- SINO EXISTE LA TABLA, SE CREA. ALMACENA LOS SUBMODELOS DE LOS MODELOS DE LOS AUTOS
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'dbo' AND TABLE_NAME = 'submodels')
+BEGIN
+	CREATE TABLE submodels (
+		submodelId INT PRIMARY KEY IDENTITY(1,1),
+		name VARCHAR(50) NOT NULL,
+		modelId INT NOT NULL,
+		CONSTRAINT fk_submodels_modelId FOREIGN KEY (modelId) REFERENCES models(modelId)
+	);
+END
+
+-- SINO EXISTE LA TABLA, SE CREA. ALMACENA LOS DATOS DE LOS AUTOS
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'dbo' AND TABLE_NAME = 'cars')
+BEGIN
+	CREATE TABLE cars (
+		carId INT PRIMARY KEY IDENTITY(1,1),
+		year INT NOT NULL,
+		brandId INT NOT NULL,
+		modelId INT NOT NULL,
+		submodelId INT NOT NULL,
+		CONSTRAINT fk_cars_brandId FOREIGN KEY (brandId) REFERENCES brands(brandId),
+		CONSTRAINT fk_cars_modelId FOREIGN KEY (modelId) REFERENCES models(modelId),
+		CONSTRAINT fk_cars_submodelId FOREIGN KEY (submodelId) REFERENCES submodels(submodelId)
+	);
+END
+
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'dbo' AND TABLE_NAME = 'zipCodes')
+BEGIN
+	CREATE TABLE zipCodes (
+		zipCodeId INT PRIMARY KEY IDENTITY(1,1),
+		zipCode VARCHAR(10)
+	);
+END
+
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'dbo' AND TABLE_NAME = 'buyers')
+BEGIN
+	CREATE TABLE buyers (
+		buyerId INT PRIMARY KEY IDENTITY(1,1),
+		name VARCHAR(100) NOT NULL,
+		contact VARCHAR(255)
+	);
+END
+
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'dbo' AND TABLE_NAME = 'quoteStatus')
+BEGIN
+	CREATE TABLE quoteStatus (
+		quoteStatusId INT PRIMARY KEY IDENTITY(1,1),
+		name VARCHAR(50) NOT NULL UNIQUE,
+		isRequiredDate BIT DEFAULT 0 -- 1 Para setear si el estado requiere una fecha obligatoria
+	);
+END
+
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'dbo' AND TABLE_NAME = 'quotes')
+BEGIN
+	CREATE TABLE quotes (
+		quoteId INT PRIMARY KEY IDENTITY(1,1),
+		carId INT NOT NULL,
+		buyerId INT NOT NULL,
+		zipCodeId INT NOT NULL,
+		amount decimal(10,2) NOT NULL,
+		isCurrent BIT DEFAULT 0, --INDICA SI LA COTIZACION ES LA ACTUAL Y GANADORA
+		quoteStatusId INT NOT NULL DEFAULT 1, -- INDICA EL ESTADO DE LA COTIZACION POR DEFAULT 1 Pending Acceptance
+		CONSTRAINT fk_quotes_carId FOREIGN KEY (carId) REFERENCES cars(carId),
+		CONSTRAINT fk_quotes_buyerId FOREIGN KEY (buyerId) REFERENCES buyers(buyerId),
+		CONSTRAINT fk_quotes_zipCodeId FOREIGN KEY (zipCodeId) REFERENCES zipCodes(zipCodeId),
+		CONSTRAINT fk_quotes_quoteStatusId FOREIGN KEY (quoteStatusId) REFERENCES quoteStatus(quoteStatusId)
+	);
+END
+
+-- Indice unico filtrado para garantizar que solo una cotizacion es "actual" por auto
+IF NOT EXISTS (
+    SELECT 1
+    FROM sys.indexes i
+    JOIN sys.objects o ON i.object_id = o.object_id
+    WHERE i.name = 'UQ_current_quote' AND o.name = 'quotes'
+)
+BEGIN
+    CREATE UNIQUE INDEX UQ_current_quote ON quotes (carId) WHERE isCurrent = 1;
+END
+
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'dbo' AND TABLE_NAME = 'quoteStatusHistory')
+BEGIN
+	CREATE TABLE quoteStatusHistory (
+		historyId INT PRIMARY KEY IDENTITY(1,1),
+		quoteId INT NOT NULL,
+		quoteStatusId INT NOT NULL,
+		modifiedAt DATETIME DEFAULT GETDATE(),
+		modifyBy INT, -- ID del usuario que realizo el cambio
+		quoteStatusDate DATE,
+		--CONSTRAINT fk_history_quoteId FOREIGN KEY (quoteId) REFERENCES quotes(quoteId),
+		CONSTRAINT fk_history_quoteStatusID FOREIGN KEY (quoteStatusId) REFERENCES quoteStatus(quoteStatusId)
+	);
+END

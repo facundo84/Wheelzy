@@ -1,0 +1,12 @@
+Ejecutar los scripts en el siguiente orden:
+1).1_CreateDatabase_Wheelzy.sql => script que crea la base de datos
+
+2).2_Insert_Initial_Data.sql => Script que inserta los datos iniciales
+
+3). 3_TRG_Quotes_ValidateZipCodesByBuyer.sql => Trigger que valida el maximo de codigos postales asociados a un comprador
+
+4). 4_TRG_Quotes_StatusHistory_ValidateDate.sql => Trigger que valida si se ingresa una fecha al setear el estado Picked Up (3), la fecha para este caso es obligatoria.
+
+5). 5_Query_Obtener_Datos_Vehiculos.sql => Consulta para obtener los datos de vehiculos.
+
+Ejercicio1_query_EntityFramework.cs => Consulta del punto 5) realizada con entity Framework
